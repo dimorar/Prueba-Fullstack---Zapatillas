@@ -1,1 +1,19 @@
+package com.example.zapatillasduoc.repository;
 
+import com.example.zapatillasduoc.model.Talla;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+
+@Repository
+public interface TallaRepository extends JpaRepository<Talla, Long> {
+    
+    List<Talla> findByZapatillaId(Long zapatillaId);
+    
+    @Transactional
+    void deleteByZapatillaId(Long zapatillaId);
+
+}
