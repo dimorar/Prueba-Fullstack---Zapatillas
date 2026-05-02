@@ -1,1 +1,21 @@
+package com.example.zapatillasduoc.repository;
 
+import com.example.zapatillasduoc.model.Zapatilla;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+
+@Repository
+public interface ZapatillaRepository extends JpaRepository<Zapatilla, Long> {
+    Optional<Zapatilla> findByCodigo(String codigo);
+    
+    List<Zapatilla> findByGenero(String genero);
+    
+    List<Zapatilla> findByGeneroOrGenero(String genero1, String genero2);
+    
+    boolean existsByCodigo(String codigo);
+
+}
