@@ -1,0 +1,173 @@
+package com.example.zapatillasduoc.controller;
+
+import com.example.zapatillasduoc.dto.ZapatillaDTO;
+import com.example.zapatillasduoc.model.Talla;
+import com.example.zapatillasduoc.model.Zapatilla;
+import com.example.zapatillasduoc.service.ZapatillaService;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+
+@RestController
+@RequestMapping("/api/v1/zapatillas")
+public class ZapatillaController {
+
+    private static final Logger log = LoggerFactory.getLogger(ZapatillaController.class);
+
+    @Autowired
+    private ZapatillaService zapatillaService;
+
+    @GetMapping("/menu")
+    public ResponseEntity<Map<String, Object>> verMenu() {
+        log.info("[CONTROLLER] GET /menu - Solicitando menu de zapatillas en stock");
+        try {
+            Map<String, Object> menu = zapatillaService.construirMenuStock();
+            log.info("[CONTROLLER] Menu retornado correctamente");
+            return ResponseEntity.ok(menu);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /menu: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/modelo/{codigo}")
+    public ResponseEntity<Map<String, Object>> verModeloConTallas(@PathVariable String codigo) {
+        log.info("[CONTROLLER] GET /modelo/{} - Solicitando detalle del modelo", codigo);
+        try {
+            Map<String, Object> detalle = zapatillaService.construirDetalleConTallas(codigo);
+            log.info("[CONTROLLER] Detalle del modelo '{}' retornado correctamente", codigo);
+            return ResponseEntity.ok(detalle);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /modelo/{}: {}", codigo, e.getMessage());
+            throw e;
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Zapatilla>> listarTodas() {
+        log.info("[CONTROLLER] GET / - Listando todas las zapatillas");
+        try {
+            List<Zapatilla> lista = zapatillaService.obtenerTodas();
+            log.info("[CONTROLLER] Se retornaron {} zapatillas", lista.size());
+            return ResponseEntity.ok(lista);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Zapatilla> buscarPorId(@PathVariable Long id) {
+        log.info("[CONTROLLER] GET /{} - Buscando zapatilla por ID", id);
+        try {
+            Zapatilla zapatilla = zapatillaService.obtenerPorId(id);
+            log.info("[CONTROLLER] Zapatilla ID {} encontrada: {}", id, zapatilla.getModelo());
+            return ResponseEntity.ok(zapatilla);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /{}: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+
+    @GetMapping("/genero/{genero}")
+    public ResponseEntity<List<Zapatilla>> buscarPorGenero(@PathVariable String genero) {
+        log.info("[CONTROLLER] GET /genero/{} - Filtrando por genero", genero);
+        try {
+            List<Zapatilla> lista = zapatillaService.obtenerPorGenero(genero);
+            log.info("[CONTROLLER] Se retornaron {} zapatillas para genero: {}", lista.size(), genero);
+            return ResponseEntity.ok(lista);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /genero/{}: {}", genero, e.getMessage());
+            throw e;
+        }
+    }
+
+    @GetMapping("/{id}/tallas")
+    public ResponseEntity<List<Talla>> verTallasPorId(@PathVariable Long id) {
+        log.info("[CONTROLLER] GET /{}/tallas - Solicitando tallas de zapatilla ID: {}", id, id);
+        try {
+            List<Talla> tallas = zapatillaService.obtenerTallasPorId(id);
+            log.info("[CONTROLLER] Se retornaron {} tallas para ID: {}", tallas.size(), id);
+            return ResponseEntity.ok(tallas);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /{}/tallas: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+
+    @GetMapping("/total")
+    public ResponseEntity<Map<String, Object>> totalModelos() {
+        log.info("[CONTROLLER] GET /total - Contando modelos en catalogo");
+        try {
+            long total = zapatillaService.totalModelos();
+            log.info("[CONTROLLER] Total de modelos: {}", total);
+            return ResponseEntity.ok(Map.of(
+                    "total_modelos", total,
+                    "mensaje", "Total de modelos registrados en la tienda"
+            ));
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /total: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<Zapatilla> crear(@Valid @RequestBody ZapatillaDTO dto) {
+        log.info("[CONTROLLER] POST / - Creando nueva zapatilla: modelo={}", dto.getModelo());
+        try {
+            Zapatilla nueva = zapatillaService.guardar(dto);
+            log.info("[CONTROLLER] Nueva zapatilla creada con ID: {}", nueva.getId());
+            // HTTP 201 Created: el recurso fue creado exitosamente
+            return ResponseEntity.status(HttpStatus.CREATED).body(nueva);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en POST /: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Zapatilla> actualizar(@PathVariable Long id, @Valid @RequestBody ZapatillaDTO dto) {
+        log.info("[CONTROLLER] PUT /{} - Actualizando zapatilla ID: {}", id, id);
+        try {
+            Zapatilla actualizada = zapatillaService.actualizar(id, dto);
+            log.info("[CONTROLLER] Zapatilla ID {} actualizada: {}", id, actualizada.getModelo());
+            return ResponseEntity.ok(actualizada);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en PUT /{}: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> eliminar(@PathVariable Long id) {
+        log.info("[CONTROLLER] DELETE /{} - Eliminando zapatilla ID: {}", id, id);
+        try {
+            String mensaje = zapatillaService.eliminar(id);
+            log.info("[CONTROLLER] Zapatilla ID {} eliminada correctamente", id);
+            return ResponseEntity.ok(Map.of("mensaje", mensaje));
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en DELETE /{}: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+    @GetMapping("/codigo/{codigo}")
+    public ResponseEntity<Zapatilla> buscarPorCodigo(@PathVariable String codigo) {
+        log.info("[CONTROLLER] GET /codigo/{} - Buscando por codigo de modelo", codigo);
+        try {
+            Zapatilla zapatilla = zapatillaService.obtenerPorCodigo(codigo);
+            log.info("[CONTROLLER] Modelo '{}' encontrado con codigo: {}", zapatilla.getModelo(), codigo);
+            return ResponseEntity.ok(zapatilla);
+        } catch (Exception e) {
+            log.error("[CONTROLLER] Error en GET /codigo/{}: {}", codigo, e.getMessage());
+            throw e;
+        }
+    }
+
+}
