@@ -1,0 +1,304 @@
+package com.example.zapatillasduoc.service;
+
+import com.example.zapatillasduoc.dto.ZapatillaDTO;
+import com.example.zapatillasduoc.exception.RecursoNoEncontradoException;
+import com.example.zapatillasduoc.model.Talla;
+import com.example.zapatillasduoc.model.Zapatilla;
+import com.example.zapatillasduoc.repository.TallaRepository;
+import com.example.zapatillasduoc.repository.ZapatillaRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+
+@Service
+public class ZapatillaService {
+
+    private static final Logger log = LoggerFactory.getLogger(ZapatillaService.class);
+
+    @Autowired
+    private ZapatillaRepository zapatillaRepository;
+
+    @Autowired
+    private TallaRepository tallaRepository;
+
+    public List<Zapatilla> obtenerTodas() {
+        log.info("[SERVICE] Obteniendo catalogo completo de zapatillas");
+        try {
+            List<Zapatilla> lista = zapatillaRepository.findAll();
+            log.info("[SERVICE] Se encontraron {} modelos en el catalogo", lista.size());
+            return lista;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al obtener catalogo: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    public Zapatilla obtenerPorId(Long id) {
+        log.info("[SERVICE] Buscando zapatilla con ID: {}", id);
+        try {
+            return zapatillaRepository.findById(id)
+                    .orElseThrow(() -> {
+                        log.warn("[SERVICE] No se encontro zapatilla con ID: {}", id);
+                        return new RecursoNoEncontradoException("No existe zapatilla con ID: " + id);
+                    });
+        } catch (RecursoNoEncontradoException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al buscar por ID {}: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+
+    public Zapatilla obtenerPorCodigo(String codigo) {
+        log.info("[SERVICE] Buscando modelo con codigo: {}", codigo);
+        try {
+            return zapatillaRepository.findByCodigo(codigo)
+                    .orElseThrow(() -> {
+                        log.warn("[SERVICE] Modelo no encontrado con codigo: {}", codigo);
+                        return new RecursoNoEncontradoException(
+                                "No existe modelo con codigo: '" + codigo + "'. Revisa el menu de zapatillas en stock.");
+                    });
+        } catch (RecursoNoEncontradoException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al buscar por codigo {}: {}", codigo, e.getMessage());
+            throw e;
+        }
+    }
+
+    public List<Zapatilla> obtenerPorGenero(String genero) {
+        log.info("[SERVICE] Filtrando zapatillas por genero: {}", genero);
+        try {
+            if (!genero.equalsIgnoreCase("HOMBRE") && !genero.equalsIgnoreCase("MUJER") && !genero.equalsIgnoreCase("UNISEX")) {
+                log.warn("[SERVICE] Genero invalido recibido: {}", genero);
+                throw new IllegalArgumentException("Genero invalido. Use: HOMBRE, MUJER o UNISEX");
+            }
+
+            List<Zapatilla> resultado;
+            if (genero.equalsIgnoreCase("UNISEX")) {
+                resultado = zapatillaRepository.findByGenero("UNISEX");
+            } else {
+                resultado = zapatillaRepository.findByGeneroOrGenero(genero.toUpperCase(), "UNISEX");
+            }
+
+            log.info("[SERVICE] Se encontraron {} zapatillas para genero: {}", resultado.size(), genero);
+            return resultado;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al filtrar por genero {}: {}", genero, e.getMessage());
+            throw e;
+        }
+    }
+
+    public List<Talla> obtenerTallasPorId(Long id) {
+        log.info("[SERVICE] Obteniendo tallas de zapatilla ID: {}", id);
+        try {
+            obtenerPorId(id);
+            List<Talla> tallas = tallaRepository.findByZapatillaId(id);
+            log.info("[SERVICE] Se encontraron {} tallas para ID: {}", tallas.size(), id);
+            return tallas;
+        } catch (RecursoNoEncontradoException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al obtener tallas de ID {}: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+    public Map<String, Object> construirMenuStock() {
+        log.info("[SERVICE] Construyendo menu de zapatillas en stock");
+        try {
+            List<Zapatilla> todas = zapatillaRepository.findAll();
+
+            Map<String, Object> menu = new LinkedHashMap<>();
+            menu.put("mensaje", "Â¡Zapatillas en Stock! - Tienda Nike");
+            menu.put("instruccion", "Elige tu modelo usando el endpoint: GET /api/v1/zapatillas/modelo/{codigo}");
+
+            List<Map<String, Object>> modelos = new ArrayList<>();
+            for (Zapatilla z : todas) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("codigo", z.getCodigo());
+                item.put("modelo", z.getModelo());
+                item.put("genero", z.getGenero());
+                item.put("precio", "$" + z.getPrecio());
+                item.put("stock", z.getStock() + " unidades disponibles");
+                modelos.add(item);
+            }
+
+            menu.put("modelos_disponibles", modelos);
+            log.info("[SERVICE] Menu construido con {} modelos", modelos.size());
+            return menu;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al construir menu: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    public Map<String, Object> construirDetalleConTallas(String codigo) {
+        log.info("[SERVICE] Construyendo detalle del modelo: {}", codigo);
+        try {
+            Zapatilla z = obtenerPorCodigo(codigo);
+
+            Map<String, Object> detalle = new LinkedHashMap<>();
+            detalle.put("modelo", z.getModelo());
+            detalle.put("codigo", z.getCodigo());
+            detalle.put("genero", z.getGenero());
+            detalle.put("descripcion", z.getDescripcion());
+            detalle.put("precio", "$" + z.getPrecio());
+            detalle.put("stock_disponible", z.getStock() + " unidades");
+
+            List<Double> numerosTallas = new ArrayList<>();
+            for (Talla t : z.getTallas()) {
+                numerosTallas.add(t.getNumero());
+            }
+            detalle.put("tallas_disponibles", numerosTallas);
+            detalle.put("instruccion", "Selecciona tu talla de la lista y procede con tu compra");
+
+            log.info("[SERVICE] Detalle construido para modelo: {} con {} tallas", codigo, numerosTallas.size());
+            return detalle;
+        } catch (RecursoNoEncontradoException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al construir detalle del modelo {}: {}", codigo, e.getMessage());
+            throw e;
+        }
+    }
+
+    @Transactional
+    public Zapatilla guardar(ZapatillaDTO dto) {
+        log.info("[SERVICE] Creando nueva zapatilla: modelo={}, codigo={}", dto.getModelo(), dto.getCodigo());
+        try {
+            if (zapatillaRepository.existsByCodigo(dto.getCodigo())) {
+                log.warn("[SERVICE] Ya existe un modelo con codigo: {}", dto.getCodigo());
+                throw new IllegalArgumentException("Ya existe una zapatilla con el codigo: " + dto.getCodigo());
+            }
+
+            validarTallasSegunGenero(dto.getGenero(), dto.getTallas());
+
+            Zapatilla zapatilla = new Zapatilla();
+            zapatilla.setModelo(dto.getModelo());
+            zapatilla.setCodigo(dto.getCodigo());
+            zapatilla.setGenero(dto.getGenero().toUpperCase());
+            zapatilla.setPrecio(dto.getPrecio());
+            zapatilla.setDescripcion(dto.getDescripcion());
+            zapatilla.setStock(dto.getStock());
+
+            Zapatilla guardada = zapatillaRepository.save(zapatilla);
+
+            List<Talla> tallas = new ArrayList<>();
+            for (Double numero : dto.getTallas()) {
+                Talla t = new Talla();
+                t.setNumero(numero);
+                t.setZapatilla(guardada);
+                tallas.add(t);
+            }
+            tallaRepository.saveAll(tallas);
+
+            log.info("[SERVICE] Zapatilla creada exitosamente con ID: {}", guardada.getId());
+            return zapatillaRepository.findById(guardada.getId()).orElse(guardada);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al crear zapatilla: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Transactional
+    public Zapatilla actualizar(Long id, ZapatillaDTO dto) {
+        log.info("[SERVICE] Actualizando zapatilla ID: {}", id);
+        try {
+            Zapatilla existente = obtenerPorId(id);
+
+            if (!existente.getCodigo().equals(dto.getCodigo()) && zapatillaRepository.existsByCodigo(dto.getCodigo())) {
+                log.warn("[SERVICE] Codigo duplicado al actualizar: {}", dto.getCodigo());
+                throw new IllegalArgumentException("Ya existe otra zapatilla con el codigo: " + dto.getCodigo());
+            }
+
+            validarTallasSegunGenero(dto.getGenero(), dto.getTallas());
+
+            existente.setModelo(dto.getModelo());
+            existente.setCodigo(dto.getCodigo());
+            existente.setGenero(dto.getGenero().toUpperCase());
+            existente.setPrecio(dto.getPrecio());
+            existente.setDescripcion(dto.getDescripcion());
+            existente.setStock(dto.getStock());
+            zapatillaRepository.save(existente);
+
+            tallaRepository.deleteByZapatillaId(id);
+            List<Talla> nuevasTallas = new ArrayList<>();
+            for (Double numero : dto.getTallas()) {
+                Talla t = new Talla();
+                t.setNumero(numero);
+                t.setZapatilla(existente);
+                nuevasTallas.add(t);
+            }
+            tallaRepository.saveAll(nuevasTallas);
+
+            log.info("[SERVICE] Zapatilla ID {} actualizada exitosamente", id);
+            return zapatillaRepository.findById(id).orElse(existente);
+        } catch (RecursoNoEncontradoException | IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al actualizar zapatilla ID {}: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+
+    @Transactional
+    public String eliminar(Long id) {
+        log.info("[SERVICE] Eliminando zapatilla ID: {}", id);
+        try {
+            Zapatilla zapatilla = obtenerPorId(id);
+            zapatillaRepository.deleteById(id);
+            log.info("[SERVICE] Zapatilla '{}' eliminada correctamente (ID: {})", zapatilla.getModelo(), id);
+            return "Zapatilla '" + zapatilla.getModelo() + "' eliminada correctamente";
+        } catch (RecursoNoEncontradoException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[SERVICE] Error al eliminar zapatilla ID {}: {}", id, e.getMessage());
+            throw e;
+        }
+    }
+
+    public long totalModelos() {
+        log.info("[SERVICE] Contando total de modelos en catalogo");
+        long total = zapatillaRepository.count();
+        log.info("[SERVICE] Total de modelos: {}", total);
+        return total;
+    }
+
+    private void validarTallasSegunGenero(String genero, List<Double> tallas) {
+        for (Double talla : tallas) {
+            if (genero.equalsIgnoreCase("MUJER")) {
+                if (talla < 36.0 || talla > 39.0) {
+                    log.warn("[SERVICE] Talla {} invalida para genero MUJER (rango 36-39)", talla);
+                    throw new IllegalArgumentException(
+                            "Talla " + talla + " invalida para MUJER. Rango permitido: 36.0 a 39.0");
+                }
+            } else if (genero.equalsIgnoreCase("HOMBRE")) {
+                if (talla < 40.0 || talla > 44.0) {
+                    log.warn("[SERVICE] Talla {} invalida para genero HOMBRE (rango 40-44)", talla);
+                    throw new IllegalArgumentException(
+                            "Talla " + talla + " invalida para HOMBRE. Rango permitido: 40.0 a 44.0");
+                }
+            } else if (genero.equalsIgnoreCase("UNISEX")) {
+                if (talla < 36.0 || talla > 44.0) {
+                    log.warn("[SERVICE] Talla {} invalida para UNISEX (rango 36-44)", talla);
+                    throw new IllegalArgumentException(
+                            "Talla " + talla + " invalida para UNISEX. Rango permitido: 36.0 a 44.0");
+                }
+            }
+        }
+        log.info("[SERVICE] Tallas validadas correctamente para genero: {}", genero);
+    }
+
+}
