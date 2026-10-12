@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GasVolcan - Catálogo</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="logo">GasVolcan</div>
+        <nav class="nav-menu">
+            <a href="index.html">Inicio</a>
+            <a href="catalogo.html">Catálogo</a>
+            <a href="contacto.html">Contacto/Registro</a>
+            <a href="admin.html">Admin/Login</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h2>Catálogo de Productos</h2>
+        <div class="product-grid" id="product-list"></div>
+        <section class="cart-section" style="margin-top: 2rem;">
+            <h2>Carrito de Compras (<span id="cart-count">0</span>)</h2>
+            <table border="1">
+                <thead>
+                    <tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th>Acción</th></tr>
+                </thead>
+                <tbody id="cart-items-body"></tbody>
+            </table>
+            <h4>Total a Pagar: $<span id="cart-total">0</span></h4>
+        </section>
+    </main>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# GasVolcan - Versión legacy (HTML + JS vanilla)
+Versión original del proyecto, conservada solo como referencia. La aplicación actual está en src/ (React).
+ESLint ignora esta carpeta (ver eslint.config.js).
+
+## Historias de Usuario
+- HU-01: Catálogo interactivo de productos.
+- HU-02: Formulario con validación de RUN y correos institucionales.
+- HU-03: Panel administrativo con alerta de stock crítico.

@@ -1,0 +1,5 @@
+[
+  { "codigo": "RM", "nombre": "Región Metropolitana", "comunas": ["Santiago", "Macul", "Providencia", "La Florida", "Peñalolén", "Ñuñoa", "Maipú", "Puente Alto"] },
+  { "codigo": "V", "nombre": "Región de Valparaíso", "comunas": ["Valparaíso", "Viña del Mar", "Quilpué", "Villa Alemana"] },
+  { "codigo": "VIII", "nombre": "Región del Biobío", "comunas": ["Concepción", "Talcahuano", "San Pedro de la Paz", "Chiguayante"] }
+]

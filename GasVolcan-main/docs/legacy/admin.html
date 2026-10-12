@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GasVolcan - Administración</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main class="container">
+        <section id="login-section" class="form-box">
+            <h2>Inicio de Sesión</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Correo" required>
+                <input type="password" id="login-pass" placeholder="Contraseña" required>
+                <button type="submit" class="btn">Ingresar</button>
+            </form>
+        </section>
+        <section id="admin-panel" class="hidden">
+    <h2>Inventario (Control de Stock)</h2>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody id="admin-product-list"></tbody>
+    </table>
+    <table border="1">
+    <thead>
+        <tr><th>RUN</th><th>Nombre</th><th>Correo</th><th>Acciones</th></tr>
+    </thead>
+    <tbody id="admin-user-list"></tbody>
+</table>
+</section>
+    </main>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
